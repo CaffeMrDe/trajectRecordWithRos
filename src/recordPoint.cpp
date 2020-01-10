@@ -76,6 +76,7 @@ int main(int argc, char **argv)
 
 /*
  *
+ *
   ros::Publisher robotTrajectortPub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/fake_test/joint_states",1);
 
   moveit::planning_interface::MoveGroupInterface::Plan my_plan;
