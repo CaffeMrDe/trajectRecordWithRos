@@ -1,2 +1,8 @@
-可以看到，fake_controller_joint_states（由move_group发布）没有输出，而joint_states（由joint_state_publisher发布）一直输出，但其中的关节值是恒定不变的。当在RvizVisualToolsGui中点击第一次Next后，rviz中的机器人开始显示轨迹规划运动，但fake_controller_joint_states仍没有输出，joint_states内容仍然恒定。这说明仅仅只是轨迹规划并不会影响实际的关节的值，在rviz中的关节运动仅仅只是move_group通过插件直接控制rviz的结果。
+# NOTICE
+--
+You can use this package to record the TrajectPoint from ros-industriy-trajectpoint easilly!  
+You can change the ros-topic the resoures from the TrajectPoint.  
 
+If you  have any issue , you can contact with me at 13674059697@163.com.  
+
+Thank you!  
