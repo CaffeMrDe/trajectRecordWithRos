@@ -25,6 +25,9 @@ public:
     TrajectGroupData(){
         id = 0;
     }
+    ~TrajectGroupData(){
+        trajectElementVec.clear();
+    }
 
 public:
     std::vector<double> getPositionElement(int index){
@@ -56,12 +59,14 @@ public:
 
 public:
     void setTrajectGroupElementData(std::vector<double> &positionGroup, std::vector<double>& vectoryGroup,  std::vector<double> &accelerationGroup, double timeGroup){
+        dbg("setTrajectGroupElementData ");
         TrajectElementData  obj;
         obj.positionGroup = positionGroup;
         obj.vectoryGroup = vectoryGroup;
         obj.accelerationGroup = accelerationGroup;
         obj.timeGroup = timeGroup;
         obj.id = this->id;
+
         trajectElementVec.push_back(obj);
 
         id++;

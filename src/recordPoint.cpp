@@ -4,8 +4,38 @@
 #include "moveit_msgs/RobotTrajectory.h"
 #include "TrajectData.h"
 #include "memory"
+#include "chrono"
+#include <sys/stat.h>
+#include <errno.h>
 std::vector<trajectory_msgs::JointTrajectoryPoint> JointVector;
 bool updateFalg = false;
+
+
+namespace light
+{
+int mkpath(std::string s,mode_t mode=0755)
+{
+    size_t pre=0,pos;
+    std::string dir;
+    int mdret;
+
+    if(s[s.size()-1]!='/'){
+        // force trailing / so we can handle everything in loop
+        s+='/';
+    }
+
+    while((pos=s.find_first_of('/',pre))!=std::string::npos){
+        dir=s.substr(0,pos++);
+        pre=pos;
+        if(dir.size()==0) continue; // if leading / first time is 0 length
+        if((mdret=::mkdir(dir.c_str(),mode)) && errno!=EEXIST){
+            return mdret;
+        }
+    }
+    return mdret;
+}
+}
+
 
 void jointstatesCallback(const trajectory_msgs::JointTrajectoryConstPtr& msg)
 {
@@ -40,7 +70,15 @@ void trajectMessageToTrajectStructoin(std::vector<trajectory_msgs::JointTrajecto
 
 
     std::shared_ptr<TrajectDataIoManager> trajectManager = std::make_shared<TrajectDataIoManager>(trajectGroupData);
-    trajectManager->saveData();
+
+    auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    //转为字符串
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&t), "%Y-%m-%d-%H-%M-%S");
+    std::string str_time = ss.str();
+
+    light::mkpath(str_time);
+    trajectManager->saveData(str_time+"/");
     ROS_WARN("trajectManager->saveData finish");
 }
 
@@ -52,7 +90,8 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
   std::shared_ptr<TrajectGroupData> trajectGroupData = std::make_shared<TrajectGroupData>();
 
-  ros::Subscriber sub = n.subscribe("/fake_test/joint_states", 1, jointstatesCallback);
+//  ros::Subscriber sub = n.subscribe("/fake_test/joint_states", 1, jointstatesCallback);
+  ros::Subscriber sub = n.subscribe("/joint_path_command", 1, jointstatesCallback);
   ROS_INFO("Start listener the /fake/joint_states JointTrajectory");
   ros::Rate loop_rate(1);
 //  ros::AsyncSpinner(1);

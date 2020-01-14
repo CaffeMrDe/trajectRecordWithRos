@@ -1,11 +1,19 @@
-#include "mainwindow.h"
+﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "dbg.h"
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    qRegisterMetaType<std::vector<trajectory_msgs::JointTrajectoryPoint>>("std::vector<trajectory_msgs::JointTrajectoryPoint>");
     ui->setupUi(this);
+    InitJointCustomPlot(ui->PositionplotWidget);
+    InitJointCustomPlot(ui->vecPlotWidget);
+    InitJointCustomPlot(ui->accPlotWidget);
+
+//    connect(this, &MainWindow::emitTrajectPoint, this, &MainWindow::receiveTrajectData);
+
 }
 
 MainWindow::~MainWindow()
@@ -40,13 +48,16 @@ void MainWindow::updateCustomData(QCustomPlot *customPlot, std::shared_ptr<Traje
         }
         x[i] = group->getTimeStampElement(i);
 //        dbg("getTimeStampElement -- tempDatasize:",tempData.size());
-        jp0[i] = tempData[0];       // exponentially decaying cosine
-        jp1[i] = tempData[1];       // exponential envelope
-        jp2[i] = tempData[2];
-        jp3[i] = tempData[3];
-        jp4[i] = tempData[4];
-        jp5[i] = tempData[5];
-        jp6[i] = tempData[6];
+        jp0[i] = tempData[0]*180/3.1415;       // exponentially decaying cosine
+        jp1[i] = tempData[1]*180/3.1415;       // exponential envelope
+        jp2[i] = tempData[2]*180/3.1415;
+        jp3[i] = tempData[3]*180/3.1415;
+        jp4[i] = tempData[4]*180/3.1415;
+        jp5[i] = tempData[5]*180/3.1415;
+        jp6[i] =0;
+
+        if(type == Position)
+            std::cout << "position: "<< jp0[i]<<" "<< jp1[i]<<" "<< jp2[i]<<" "<< jp3[i]<<" "<< jp4[i]<<" "<< jp5[i]<<" "<< jp6[i]<<" "<<std::endl;
     }
   // configure right and top axis to show ticks but no labels:
   // (see QCPAxisRect::setupFullAxesBox for a quicker method to do this)
@@ -87,7 +98,7 @@ void MainWindow::updateCustomData(QCustomPlot *customPlot, std::shared_ptr<Traje
 bool MainWindow::loadLocalTrajectData(std::shared_ptr<TrajectGroupData> &group)
 {
     TrajectManager = std::make_shared<TrajectDataIoManager>();
-    bool rtn = TrajectManager->readData("/home/de/ws_moveit/build/test/devel/lib/trajectory_test/");
+    bool rtn = TrajectManager->readData("/home/fshs/work/trajectRecordWithRos/build/devel/lib/trajectory_test/");
 
     group = TrajectManager->getDataHandler();
 
@@ -115,20 +126,68 @@ void MainWindow::InitJointCustomPlot(QCustomPlot *customPlot)
 
 }
 
+void MainWindow::InitRosParam(ros::NodeHandle& nh_)
+{
+    this->nh_ = nh_;
+    //listener must have handler
+    sub = nh_.subscribe("/joint_path_command", 1, &MainWindow::jointstatesCallback, this);
+    ROS_INFO(" InitRosParam ");
+
+}
+
+void MainWindow::jointstatesCallback(const trajectory_msgs::JointTrajectoryConstPtr& msg)
+{
+
+  JointVector = msg->points;
+  std::cout <<" jointstatesCallback size: "<<JointVector.size()<<std::endl;
+  receiveTrajectData(JointVector);
+//  emitTrajectPoint(JointVector);
+//  ROS_INFO("time : %s ",msg->header.stamp.toSec());
+}
+
+void MainWindow::updateDrawWidget(std::shared_ptr<TrajectGroupData> &group)
+{
+    std::cout <<" updateDrawWidget group: "<<group->size()<<std::endl;
+    updateCustomData(ui->PositionplotWidget, group, Position);
+    updateCustomData(ui->vecPlotWidget, group, Vectory);
+    updateCustomData(ui->accPlotWidget, group, accelecation);
+    ui->PositionplotWidget->replot();
+    ui->vecPlotWidget->replot();
+    ui->accPlotWidget->replot();
+}
+
+void MainWindow::receiveTrajectData(std::vector<trajectory_msgs::JointTrajectoryPoint>& JointVector)
+{
+    std::cout <<" receiveTrajectData group: "<<JointVector.size()<<std::endl;
+
+    // group data reset
+    group = std::make_shared<TrajectGroupData>();
+
+    dbg("break1 .");
+    for(auto its : JointVector){
+        std::vector<double> pData = its.positions;
+        std::vector<double> vData = its.velocities;
+        std::vector<double> aData = its.accelerations;
+        double time = its.time_from_start.toSec();
+        dbg("setTrajectGroupElementData .group: ",group.use_count());
+        group->setTrajectGroupElementData(pData, vData, aData, time);
+    }
+    dbg("break2 .");
+
+    std::cout <<" updateDrawWidget "<<std::endl;
+    updateDrawWidget(group);
+}
+
 void MainWindow::on_pbn_load_clicked()
 {
     if(!loadLocalTrajectData(group)){
         return ;
     }
 
-    InitJointCustomPlot(ui->PositionplotWidget);
-    InitJointCustomPlot(ui->vecPlotWidget);
-    InitJointCustomPlot(ui->accPlotWidget);
-    updateCustomData(ui->PositionplotWidget,group, Position);
-    updateCustomData(ui->vecPlotWidget,group, Vectory);
-    updateCustomData(ui->accPlotWidget,group, accelecation);
-//    ui->plotWidget->setWindowTitle("QCustomPlot: good ");
-    ui->PositionplotWidget->replot();
-    ui->vecPlotWidget->replot();
-    ui->accPlotWidget->replot();
+    updateDrawWidget(group);
+}
+
+void MainWindow::on_pbn_updateVal_clicked()
+{
+
 }

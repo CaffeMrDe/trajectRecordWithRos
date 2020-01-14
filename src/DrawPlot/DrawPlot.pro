@@ -10,7 +10,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 
 TARGET = DrawPlot
 TEMPLATE = app
-
+CONFIG += c++11
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -24,9 +24,11 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 INCLUDEPATH += \
     /opt/ros/kinetic/include/opencv-3.3.1-dev \
-    /home/de/ws_moveit/src/trajectory_test/include
+    /home/fshs/work/trajectRecordWithRos/include \
+    /opt/ros/kinetic/include \
 
-LIBS += -L/opt/ros/kinetic/lib/x86_64-linux-gnu -lopencv_highgui3 -lopencv_core3 -lopencv_imgproc3 -lopencv_imgcodecs3 \
+LIBS += -L/opt/ros/kinetic/lib/x86_64-linux-gnu -lopencv_highgui3 -lopencv_core3 -lopencv_imgproc3 -lopencv_imgcodecs3
+LIBS += -L/opt/ros/kinetic/lib -lroscpp -lroscpp_serialization -lroslib -lrosconsole -lmoveit_move_group_interface -ltf -lrostime
 
 SOURCES += main.cpp\
         mainwindow.cpp \
